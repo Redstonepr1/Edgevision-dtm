@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge-Vision | Zero-Touch AI Food Freshness & Waste Analytics</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#10b981',
+                            600: '#059669',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons & Chart.js CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-[#080d1a] text-slate-100 min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
+
+    <!-- Top Ambient Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-sky-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="scan" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                            EDGE-VISION
+                        </span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-widest font-bold">
+                            v1.0 AI
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">Zero-Touch Food Freshness & Waste Analytics</p>
+                </div>
+            </div>
+
+            <!-- Central Hardware Status -->
+            <div class="hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs font-mono">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-slate-300">ESP32-CAM Ingestion Node:</span>
+                <span class="text-emerald-400 font-semibold">ONLINE (POST /api/v1/ingest/frame)</span>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center gap-2.5">
+                <button onclick="triggerTestAmbientAlert()" title="Test Ambient WhatsApp Alert"
+                        class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-sky-400 border border-slate-800 transition-colors">
+                    <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                </button>
+                <button onclick="openRecipeDrawer()" 
+                        class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/25 transition-all">
+                    <i data-lucide="chef-hat" class="w-4 h-4"></i>
+                    <span>Zero-Waste Drawer</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Proactive Spoilage Alert Banner -->
+    <div id="critical-warning-banner" class="hidden bg-gradient-to-r from-rose-950/80 via-rose-900/60 to-rose-950/80 border-b border-rose-500/40 px-4 py-2.5 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto flex items-center justify-between text-xs text-rose-200">
+            <div class="flex items-center gap-2" id="banner-message">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 shrink-0"></i>
+                <span><strong>Proactive Warning:</strong> Critical produce detected approaching spoilage!</span>
+            </div>
+            <button onclick="openRecipeDrawer()" class="underline font-semibold hover:text-white shrink-0 ml-4">
+                View Tailored Recipes &rarr;
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+        <!-- Metrics Overview Ribbon -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Metric 1: Food Waste Reduction -->
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                    <i data-lucide="trending-down" class="w-6 h-6 text-emerald-400"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 font-medium">Food Waste Reduction</span>
+                    <h3 class="text-2xl font-black text-white font-mono" id="impact-waste-reduction">-30%</h3>
+                    <span class="text-[11px] text-emerald-400 font-medium">Household Benchmark</span>
+                </div>
+            </div>
+
+            <!-- Metric 2: Monthly Savings -->
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
+                    <i data-lucide="dollar-sign" class="w-6 h-6 text-sky-400"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 font-medium">Monthly Grocery Savings</span>
+                    <h3 class="text-2xl font-black text-white font-mono" id="impact-savings">$68.50</h3>
+                    <span class="text-[11px] text-sky-400 font-medium">₹4,800 saved</span>
+                </div>
+            </div>
+
+            <!-- Metric 3: CO2 Footprint Reduction -->
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
+                    <i data-lucide="leaf" class="w-6 h-6 text-teal-400"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 font-medium">CO2 Footprint Reduction</span>
+                    <h3 class="text-2xl font-black text-white font-mono" id="impact-co2">19.4 kg</h3>
+                    <span class="text-[11px] text-teal-400 font-medium">Avoided Methane</span>
+                </div>
+            </div>
+
+            <!-- Metric 4: Monitored & Rescued -->
+            <div class="glass-panel rounded-2xl p-4 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
+                    <i data-lucide="shield-check" class="w-6 h-6 text-purple-400"></i>
+                </div>
+                <div>
+                    <span class="text-xs text-slate-400 font-medium">Zero-Waste Rescues</span>
+                    <h3 class="text-2xl font-black text-white font-mono" id="impact-rescued-count">42 items</h3>
+                    <span class="text-[11px] text-purple-400 font-medium">100% Zero-Touch</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="border-b border-slate-800 flex items-center justify-between gap-4 overflow-x-auto">
+            <div class="flex items-center gap-8">
+                <button data-target="view-inventory" 
+                        class="nav-tab active-tab py-3 text-sm font-semibold border-b-2 text-sky-400 border-sky-400 flex items-center gap-2 transition-all shrink-0">
+                    <i data-lucide="boxes" class="w-4 h-4"></i>
+                    <span>Live Visual Inventory</span>
+                </button>
+                <button data-target="view-decay" 
+                        class="nav-tab py-3 text-sm font-semibold border-b-2 text-slate-400 border-transparent hover:text-slate-200 flex items-center gap-2 transition-all shrink-0">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                    <span>Decay Trajectory Curves</span>
+                </button>
+                <button data-target="view-analytics" 
+                        class="nav-tab py-3 text-sm font-semibold border-b-2 text-slate-400 border-transparent hover:text-slate-200 flex items-center gap-2 transition-all shrink-0">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    <span>Household Analytics & Trends</span>
+                </button>
+                <button data-target="view-simulator" 
+                        class="nav-tab py-3 text-sm font-semibold border-b-2 text-slate-400 border-transparent hover:text-slate-200 flex items-center gap-2 transition-all shrink-0">
+                    <i data-lucide="video" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Live Camera & Auto-Detection</span>
+                    <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase font-bold animate-pulse">Live</span>
+                </button>
+            </div>
+            
+            <div class="flex items-center gap-2 pb-2">
+                <button onclick="cleanDuplicates()" title="Delete duplicate items"
+                        class="text-xs text-amber-400 hover:text-amber-300 px-3 py-1 rounded bg-amber-500/10 border border-amber-500/30 flex items-center gap-1 transition-all">
+                    <i data-lucide="sparkles" class="w-3 h-3"></i> Clean Duplicates
+                </button>
+                <button onclick="resetSampleInventory()" title="Reset Seed Demo Data"
+                        class="text-xs text-slate-400 hover:text-slate-200 px-3 py-1 rounded bg-slate-900 border border-slate-800 flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Reset Demo
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================================================================== -->
+        <!-- VIEW 1: LIVE VISUAL INVENTORY                                        -->
+        <!-- ==================================================================== -->
+        <section id="view-inventory" class="view-section space-y-5">
+            <!-- Filter Bar & Search -->
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <button data-filter="ALL" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/20 text-sky-400 border border-sky-500/40">
+                        All Items (<span id="stat-total-items">0</span>)
+                    </button>
+                    <button data-filter="CRITICAL" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-slate-800 hover:border-slate-700">
+                        Critical (&le;2d / &lt;30%) (<span id="stat-critical-items">0</span>)
+                    </button>
+                    <button data-filter="APPROACHING_SPOILAGE" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-slate-800 hover:border-slate-700">
+                        Approaching Spoilage (<span id="stat-approaching-items">0</span>)
+                    </button>
+                    <button data-filter="FRESH" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 border border-slate-800 hover:border-slate-700">
+                        Peak Fresh (<span id="stat-fresh-items">0</span>)
+                    </button>
+                </div>
+
+                <div class="text-xs text-slate-500 font-mono">
+                    CV Stack: YOLOv8 • PyTorch Decay Regressor • EasyOCR
+                </div>
+            </div>
+
+            <!-- Inventory Grid -->
+            <div id="inventory-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <!-- Dynamic cards populated by app.js -->
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- VIEW 2: DECAY & FRESHNESS TRAJECTORIES                               -->
+        <!-- ==================================================================== -->
+        <section id="view-decay" class="view-section hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Chart.js Line Curves -->
+                <div class="lg:col-span-2 glass-panel rounded-2xl p-6 border border-slate-800">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i data-lucide="line-chart" class="w-4 h-4 text-sky-400"></i>
+                                Visual Decay Trajectory Curves
+                            </h3>
+                            <p class="text-xs text-slate-400">Empirical color/texture shifts mapped to kinetic decay rate over time</p>
+                        </div>
+                        <span class="text-xs font-mono px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400">
+                            Arrhenius Q10 Kinetic Physics
+                        </span>
+                    </div>
+                    <div class="h-80 w-full">
+                        <canvas id="decay-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Right: Time-Lapse Progress Bars -->
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2 mb-1">
+                            <i data-lucide="hourglass" class="w-4 h-4 text-amber-400"></i>
+                            Time-Lapse Progress Bars
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4">Current state against minimum threshold</p>
+                        
+                        <div id="decay-progress-bars" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Ambient Telemetry Footnote -->
+                    <div class="pt-4 mt-4 border-t border-slate-800/80 text-[11px] text-slate-500 font-mono space-y-1">
+                        <div class="flex justify-between">
+                            <span>Ambient Temp:</span>
+                            <span class="text-slate-300">22.4 °C (Q10 = 2.0)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Relative Humidity:</span>
+                            <span class="text-slate-300">68.2 % RH</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- VIEW 3: HOUSEHOLD ANALYTICS & TRENDS                                 -->
+        <!-- ==================================================================== -->
+        <section id="view-analytics" class="view-section hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 border border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-400"></i>
+                            Household Food Waste Reduction Trends
+                        </h3>
+                        <p class="text-xs text-slate-400">Weekly waste comparison before and after deploying Edge-Vision</p>
+                    </div>
+                    <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20 font-bold">
+                        -30% Sustained Waste Reduction
+                    </span>
+                </div>
+                <div class="h-80 w-full">
+                    <canvas id="weekly-trends-canvas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- VIEW 4: LIVE CAMERA FEED & AUTO-DETECTION SANDBOX                    -->
+        <!-- ==================================================================== -->
+        <section id="view-simulator" class="view-section hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Live Camera Viewfinder & Real-Time Controls -->
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="video" class="w-5 h-5 text-emerald-400"></i>
+                                    Live Camera Feed
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Stream your webcam to automatically classify produce & estimate freshness</p>
+                            </div>
+                            <span id="cam-status-pill" class="text-[11px] font-mono px-2.5 py-1 rounded-full bg-slate-900 text-slate-400 border border-slate-800 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+                                Camera Offline
+                            </span>
+                        </div>
+
+                        <!-- Live Video Viewfinder -->
+                        <div class="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-video flex items-center justify-center group shadow-2xl">
+                            <!-- Video Element -->
+                            <video id="webcam-video" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
+                            <canvas id="webcam-canvas" class="hidden"></canvas>
+
+                            <!-- Placeholder when camera is inactive -->
+                            <div id="cam-placeholder" class="text-center p-6 space-y-3">
+                                <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500">
+                                    <i data-lucide="camera-off" class="w-8 h-8"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-300">Camera is currently inactive</p>
+                                    <p class="text-xs text-slate-500 mt-0.5">Click "Start Live Camera" below to grant webcam access</p>
+                                </div>
+                            </div>
+
+                            <!-- Viewfinder Tech Reticle Overlay (Visible when active) -->
+                            <div id="cam-reticle-overlay" class="absolute inset-0 pointer-events-none hidden border-2 border-emerald-500/20 m-4 rounded-xl">
+                                <!-- Corner Marks -->
+                                <div class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-emerald-400"></div>
+                                <div class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-emerald-400"></div>
+                                <div class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-emerald-400"></div>
+                                <div class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-emerald-400"></div>
+                                
+                                <!-- Center crosshair -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="w-10 h-10 border border-emerald-400/30 rounded-full flex items-center justify-center">
+                                        <div class="w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Auto-detect Pulse Badge -->
+                                <div class="absolute top-2 right-2">
+                                    <span id="autodetect-badge" class="hidden px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider animate-pulse">
+                                        ⚡ Auto-Detecting
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Camera Error / Banner -->
+                        <div id="cam-error-msg" class="hidden mt-2 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center gap-2">
+                            <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                            <span id="cam-error-text">Camera access was denied or device not found.</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Control Bar -->
+                    <div class="space-y-3 pt-2">
+                        <!-- Primary Action Buttons -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            <!-- Toggle Camera Stream -->
+                            <button id="btn-toggle-camera" onclick="toggleCameraStream()" 
+                                    class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all">
+                                <i data-lucide="camera" class="w-4 h-4"></i>
+                                <span id="btn-camera-text">Start Live Camera</span>
+                            </button>
+
+                            <!-- Single Frame Capture -->
+                            <button id="btn-snap-frame" onclick="captureAndDetectSingleFrame()" disabled
+                                    class="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-900 text-slate-200 border border-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                <i data-lucide="scan" class="w-4 h-4 text-sky-400"></i>
+                                <span>Snap & Detect</span>
+                            </button>
+                        </div>
+
+                        <!-- Auto-Detect Loop Control Bar -->
+                        <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5">
+                                <button id="btn-toggle-autodetect" onclick="toggleAutoDetect()" disabled
+                                        class="py-1.5 px-3 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 disabled:opacity-40 text-sky-400 border border-sky-500/30 text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                    <i data-lucide="play" class="w-3.5 h-3.5" id="autodetect-icon"></i>
+                                    <span id="autodetect-btn-text">Start Auto-Detect</span>
+                                </button>
+                                <span class="text-xs text-slate-400 hidden sm:inline">Interval:</span>
+                                <select id="autodetect-interval-select" 
+                                        class="bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 focus:ring-sky-500 font-mono">
+                                    <option value="1500">1.5s</option>
+                                    <option value="2500" selected>2.5s (Recommended)</option>
+                                    <option value="4000">4.0s</option>
+                                </select>
+                            </div>
+
+                            <span class="text-[11px] font-mono text-slate-500" id="autodetect-counter">
+                                Ingests: 0
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Latest Detection Frame & Telemetry Output -->
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800 flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
+                                Latest Detection & Freshness HUD
+                            </h3>
+                            <span class="text-xs font-mono text-slate-400" id="latest-frame-time">Waiting for capture...</span>
+                        </div>
+                        
+                        <!-- Annotated Detection Display -->
+                        <div class="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 aspect-video flex items-center justify-center shadow-xl">
+                            <img id="live-annotated-preview" src="/static/uploads/fresh_tomato.jpg" 
+                                 alt="Live Annotated Frame" class="w-full h-full object-contain">
+                            <div id="detection-spinner" class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center hidden">
+                                <div class="w-8 h-8 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin"></div>
+                            </div>
+                        </div>
+
+                        <!-- Real-Time Items Detected List -->
+                        <div class="mt-3">
+                            <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                Detected Produce in Current Frame:
+                            </h4>
+                            <div id="detected-items-summary" class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                                <div class="text-xs text-slate-500 italic p-2 rounded-lg bg-slate-950/50 border border-slate-900">
+                                    Snap a frame or enable Auto-Detect to view live detection output.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alternate Ingestion Methods: Upload & Samples Accordion -->
+                    <div class="pt-3 border-t border-slate-800/80 space-y-2">
+                        <div class="flex items-center justify-between text-xs text-slate-400 font-semibold">
+                            <span>Alternate Ingestion:</span>
+                            <label for="frame-upload-input" class="cursor-pointer text-sky-400 hover:underline flex items-center gap-1">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upload Image File
+                            </label>
+                            <input id="frame-upload-input" type="file" accept="image/*" class="hidden">
+                        </div>
+
+                        <!-- Quick Sample Hardware Captures -->
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="simulateSampleUpload('fresh_tomato.jpg')" 
+                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 font-medium text-center">
+                                🍅 Fresh Tomato
+                            </button>
+                            <button onclick="simulateSampleUpload('rotten_tomato.jpg')" 
+                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-rose-300 font-medium text-center">
+                                🍅 Soft Tomato
+                            </button>
+                            <button onclick="simulateSampleUpload('fresh_banana.jpg')" 
+                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 font-medium text-center">
+                                🍌 Fresh Banana
+                            </button>
+                            <button onclick="simulateSampleUpload('rotten_banana.jpg')" 
+                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-rose-300 font-medium text-center">
+                                🍌 Speckled
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- SLIDE-OVER DRAWER: ZERO-WASTE RECIPES                                -->
+    <!-- ==================================================================== -->
+    <div id="recipe-drawer" class="fixed inset-y-0 right-0 w-full max-w-lg bg-slate-950/95 border-l border-slate-800/90 shadow-2xl backdrop-blur-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col justify-between">
+        <!-- Drawer Header -->
+        <div class="p-6 border-b border-slate-800/80 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <i data-lucide="chef-hat" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-white">Zero-Waste Recipe Engine</h3>
+                    <p class="text-xs text-slate-400">Tailored recipes for expiring items &le; 2 days left</p>
+                </div>
+            </div>
+            <button onclick="closeRecipeDrawer()" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Drawer Body -->
+        <div class="p-6 flex-1 overflow-y-auto" id="recipe-cards-container">
+            <!-- Dynamic Recipe Cards -->
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-4 border-t border-slate-800/80 bg-slate-900/50 flex items-center justify-between text-xs text-slate-400">
+            <span>Powered by Gemini & Smart Heuristics</span>
+            <button onclick="closeRecipeDrawer()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold">
+                Done Cooking
+            </button>
+        </div>
+    </div>
+
+    <!-- Ingest Loading Overlay Modal -->
+    <div id="ingest-loading-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="glass-card rounded-2xl p-6 max-w-sm w-full text-center space-y-4 border border-sky-500/30">
+            <div class="w-12 h-12 rounded-full border-4 border-sky-500 border-t-transparent animate-spin mx-auto"></div>
+            <div>
+                <h4 class="font-bold text-white text-base">Processing Camera Frame</h4>
+                <p class="text-xs text-slate-400 mt-1">Running YOLOv8 &bull; EasyOCR &bull; PyTorch Decay Model...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

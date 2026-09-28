@@ -1,0 +1,17 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+data/*.db
+data/*.sqlite
+data/fruit_repo/
+data/downloaded_dataset/
+edge_vision/web/static/uploads/frame_*
+edge_vision/web/static/uploads/sim_*
+edge_vision/web/static/uploads/*_crop_*
+edge_vision/web/static/uploads/*_raw.jpg
+edge_vision/web/static/uploads/*_annotated.jpg
+.pytest_cache/
+temp_repo/
